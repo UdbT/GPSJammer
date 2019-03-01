@@ -185,12 +185,12 @@ class GPSJammer:
                 subDataset = pd.DataFrame(columns=columns)
                 print("DONE!")
         return pd.concat(dataset)
-# if __name__ == "__main__":
-import time
-t = time.time()
-roadNum = 2
-date = "2019-01-04"
-gpsJammer = GPSJammer(roadNum=roadNum, date=date)
-# gpsJammer.carOnRoadToCsv()
-gpsJammer.allDeltaToCsv()
-print(time.time() - t)
+if __name__ == "__main__":
+    import time
+    t = time.time()
+    roadNum = 2
+    date = "2019-01-04"
+    gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+    # gpsJammer.carOnRoadToCsv()
+    # gpsJammer.allDeltaToCsv()
+    print(time.time() - t)

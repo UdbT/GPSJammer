@@ -19,7 +19,6 @@ dataPath = os.path.join(os.getcwd(), date)
 
 deltaResults = pd.read_csv(os.path.join(dataPath, "delta", "delta_"+date+".csv"))
 deltaResults[['delta_dist', 'delta_time']] = deltaResults.loc[:, ['delta_dist', 'delta_time']].astype(float)
-
 # ======================== Bokeh Visualization ==================
 def latLonToMercator(row):
     return transform(Proj(init='epsg:4326'), Proj(init='epsg:3857'), row[1], row[0])  # longitude first, latitude second.
@@ -58,13 +57,13 @@ def pointCallback(attr, old, new):
     source_map.data = newData[['lat', 'lon']].to_dict('list')
 
 # ------------------------ Build plot ------------------------
-plot = figure(sizing_mode='scale_width', tools="pan,wheel_zoom,box_zoom,reset,tap", plot_height=200)
+plot = figure(sizing_mode='scale_width', tools="pan,wheel_zoom,box_zoom,reset,tap", plot_height=200, output_backend="webgl")
 plot.toolbar.active_scroll = "auto"
 plot.yaxis.axis_label = "Time Delta (Hours)"
 plot.xaxis.axis_label = "Distance Delta (km)"
 
-glyph_render = plot.circle(x = 'delta_dist', y = 'delta_time', source=source_delta, output_backend="webgl")
-glyph_render.data_source.selected.on_change('indices', pointCallback)
+glyph_render = plot.circle(x = 'delta_dist', y = 'delta_time', source=source_delta)
+# glyph_render.data_source.selected.on_change('indices', pointCallback)
 plot.add_tools(HoverTool(renderers= [glyph_render],
 tooltips=[
     ( 'Unit ID', '@unit_id'),
