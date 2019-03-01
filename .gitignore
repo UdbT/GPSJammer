@@ -7,6 +7,7 @@
 !BokehCustom.py
 !Playground.py
 !Visualize.py
+!requirements.txt
 
 # ...even if they are in subdirectories
 !*/
