@@ -192,5 +192,5 @@ if __name__ == "__main__":
     date = "2019-01-04"
     gpsJammer = GPSJammer(roadNum=roadNum, date=date)
     # gpsJammer.carOnRoadToCsv()
-    # gpsJammer.allDeltaToCsv()
+    gpsJammer.allDeltaToCsv()
     print(time.time() - t)
