@@ -117,12 +117,16 @@ class GPSJammer:
         resultFile = open(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
         csvWriter.writerow(columns)
+        count = 0
         for fileName in csvFiles:
             if not("road" in fileName) and not("delta" in fileName):
                 print(fileName + " Reading...")
                 for i, row in enumerate(self.getUnitDelta(os.path.join(self.dataPath, fileName))):
                     if i == 0:
                         continue
+                    count += 1
+                    if count%100 == 0:
+                        print(count, end='\r')
                     csvWriter.writerow(row)
                 print("DONE!")
 
