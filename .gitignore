@@ -4,9 +4,12 @@
 # But not these files...
 !.gitignore
 !GPSJammer.py
-!BokehCustom.py
 !Playground.py
 !Visualize.py
+!ScatterMap.py
+!Histogram.py
+
+# Dependency list
 !requirements.txt
 
 # ...even if they are in subdirectories

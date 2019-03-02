@@ -48,7 +48,7 @@ class GPSJammer:
 
         self.date = date
         self.roadNum = roadNum
-        self.dataPath = os.path.join(os.getcwd(), date)
+        self.dataPath = os.path.join(os.getcwd(), "data", date)
         self.unitDelta = {}
 
     def checkRoad(self, lat, lon):
@@ -92,7 +92,7 @@ class GPSJammer:
                     timeDelta = abs(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S") - self.unitDelta[row[1]][2])
                     
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
-                    if timeDelta.seconds > 15*60 and distDelta > 5:
+                    if timeDelta.seconds > 60*60 and distDelta > 5:
                         yield [
                                 row[1],\
                                 datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"),\
@@ -112,7 +112,8 @@ class GPSJammer:
         try:
             os.makedirs(os.path.join(self.dataPath, "delta"))
         except FileExistsError:
-            pass
+            print("(Delta is already created.)")
+            return
         csvFiles = os.listdir(self.dataPath)
         resultFile = open(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
@@ -120,7 +121,7 @@ class GPSJammer:
         count = 0
         for fileName in csvFiles:
             if not("road" in fileName) and not("delta" in fileName):
-                print(fileName + " Reading...")
+                print("--> " + fileName + " Reading...")
                 for i, row in enumerate(self.getUnitDelta(os.path.join(self.dataPath, fileName))):
                     if i == 0:
                         continue
@@ -128,7 +129,8 @@ class GPSJammer:
                     if count%100 == 0:
                         print(count, end='\r')
                     csvWriter.writerow(row)
-                print("DONE!")
+                print()
+                print("--> " + "DONE!")
 
         resultFile.close()
 
@@ -192,9 +194,11 @@ class GPSJammer:
 if __name__ == "__main__":
     import time
     t = time.time()
+    print(os.listdir(os.getcwd()))
     roadNum = 2
-    date = "2019-01-04"
-    gpsJammer = GPSJammer(roadNum=roadNum, date=date)
-    # gpsJammer.carOnRoadToCsv()
-    gpsJammer.allDeltaToCsv()
+    for date in os.listdir(os.path.join(os.getcwd(), "data")):
+        print(date)
+        gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+        # gpsJammer.carOnRoadToCsv()
+        gpsJammer.allDeltaToCsv()
     print(time.time() - t)
