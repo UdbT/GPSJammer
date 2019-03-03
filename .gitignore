@@ -4,8 +4,12 @@
 # But not these files...
 !.gitignore
 !GPSJammer.py
-!Playground.py
 !Visualize.py
+!ParentBokeh.py
+!ScatterBokeh.py
+!MapBokeh.py
+!HistogramBokeh.py
+
 !ScatterMap.py
 !Histogram.py
 

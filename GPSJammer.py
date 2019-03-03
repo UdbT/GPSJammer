@@ -107,13 +107,16 @@ class GPSJammer:
                 else:
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
 
-    def allDeltaToCsv(self):
+    def allDeltaToCsv(self, force):
         columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist']
         try:
             os.makedirs(os.path.join(self.dataPath, "delta"))
         except FileExistsError:
-            print("(Delta is already created.)")
-            return
+            if not force:
+                print("(Delta is already created.)")
+                return
+            else:
+                print("Forced to calculate delta.")
         csvFiles = os.listdir(self.dataPath)
         resultFile = open(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
@@ -127,7 +130,7 @@ class GPSJammer:
                         continue
                     count += 1
                     if count%100 == 0:
-                        print(count, end='\r')
+                        print("--> ", count, end='\r')
                     csvWriter.writerow(row)
                 print()
                 print("--> " + "DONE!")
@@ -193,12 +196,30 @@ class GPSJammer:
         return pd.concat(dataset)
 if __name__ == "__main__":
     import time
+    import sys, getopt
+
     t = time.time()
-    print(os.listdir(os.getcwd()))
     roadNum = 2
-    for date in os.listdir(os.path.join(os.getcwd(), "data")):
-        print(date)
-        gpsJammer = GPSJammer(roadNum=roadNum, date=date)
-        # gpsJammer.carOnRoadToCsv()
-        gpsJammer.allDeltaToCsv()
+    dateList = sys.argv[1:]
+    force = False
+    if "-f" in sys.argv[1:]:
+        dateList = sys.argv[2:]
+        force = True
+    else:
+        dateList = sys.argv[1:]
+
+    print(dateList)
+    if len(dateList) == 0:
+        for date in os.listdir(os.path.join(os.getcwd(), "data")):
+            print(date)
+            gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+            # gpsJammer.carOnRoadToCsv()
+            gpsJammer.allDeltaToCsv(force=force)
+    else:
+        for date in dateList:
+            print(date)
+            gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+            # gpsJammer.carOnRoadToCsv()
+            gpsJammer.allDeltaToCsv(force=force)
+
     print(time.time() - t)
