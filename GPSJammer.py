@@ -92,7 +92,7 @@ class GPSJammer:
                     timeDelta = abs(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S") - self.unitDelta[row[1]][2])
                     
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
-                    if timeDelta.seconds > 60*60 and distDelta > 5:
+                    if timeDelta.seconds > 60*60 and distDelta > 80:
                         yield [
                                 row[1],\
                                 datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"),\
