@@ -108,7 +108,7 @@ class GPSJammer:
                                 speedNew 
                             ]   
                 else:
-                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
+                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), row[4])
 
     def allDeltaToCsv(self, force):
         columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
