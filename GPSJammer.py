@@ -13,8 +13,6 @@ from datetime import datetime
 import time
 from haversine import haversine
 
-from Visualize import Map
-
 def cutDecimal(num_float):
     return round(num_float - num_float % 0.01, 2)
 
