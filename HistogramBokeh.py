@@ -5,12 +5,14 @@ from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure, curdoc
 
 from ParentBokeh import ParentBokeh
+from GPSJammer import GPSJammer
 
 class HistogramBokeh(ParentBokeh):
     def __init__(self, date):
         super().__init__(date)
 
         self.deltaResults = pd.DataFrame()
+        self.gpsJammer = GPSJammer(self.date)
     
     def loadData(self):
         dataPath = os.path.join(os.getcwd(), "data", self.date)
@@ -33,12 +35,24 @@ class HistogramBokeh(ParentBokeh):
         ParentBokeh.source_vbar.data = dict(unit_id=detectedCount.index.values, frequency=detectedCount.values)
 
     def buildFigure(self):
-        plot = figure(x_range=ParentBokeh.source_vbar.data['unit_id'], sizing_mode='scale_width', plot_height=200)
+        plot = figure(x_range=ParentBokeh.source_vbar.data['unit_id'], sizing_mode='scale_width',\
+                        plot_height=200,\
+                        tools="pan,wheel_zoom,box_zoom,reset,tap,save")
         plot.xaxis.major_label_orientation = pi / 3
         plot.yaxis.axis_label = "Frequency"
-        plot.vbar(x='unit_id', top='frequency', width=1, source=ParentBokeh.source_vbar)
+        glyph_render = plot.vbar(x='unit_id', top='frequency', width=1, line_color ="black", source=ParentBokeh.source_vbar)
+        glyph_render.data_source.selected.on_change('indices', self.histogramCallback)
 
         return plot
+    
+    # ------------------------ Callback ------------------------
+    def histogramCallback(self, attr, old, new):
+        selectedUnitId = pd.DataFrame(ParentBokeh.source_vbar.data)['unit_id'].iloc[new[0]]
+        print(selectedUnitId)
+        carData = self.gpsJammer.carByIdToDataframe(selectedUnitId)
+        carData['coor'] = carData[['lat', 'lon']].apply(ParentBokeh.latLonToMercator, axis=1)
+        carData['lon'], carData['lat'] = zip(*carData.coor)
+        ParentBokeh.source_map.data = carData[['lat', 'lon', 'time_stamp', 'speed']].to_dict('list')
 
 # histogramBokeh = HistogramBokeh("2019-01-01")
 # histogramBokeh.prepareData()

@@ -17,14 +17,14 @@ def cutDecimal(num_float):
     return round(num_float - num_float % 0.01, 2)
 
 class GPSJammer:
-    def __init__(self, roadNum, date):
-        kmn = pd.read_csv("km_n_new.csv", sep=",")
+    def __init__(self, date):
+        '''kmn = pd.read_csv("km_n_new.csv", sep=",")
         kmn = kmn.loc[kmn['route'] == roadNum]
         kmn['order'] = kmn['km_label'].str.split("+")
         kmn['order'] = kmn['order'].str.get(0)
         kmn['order'] = kmn['order'].apply(int)
         kmn.sort_values(by='order', inplace=True)
-        self.kmn_matrix = kmn.loc[:,['km_latitude', 'km_longitude']].values
+        self.kmn_matrix = kmn.loc[:,['km_latitude', 'km_longitude']].values'''
         
         '''self.kmn_matrix = {}
         kmn_coordinate = kmn.loc[:,['km_latitude', 'km_longitude']].apply(cutDecimal)
@@ -45,7 +45,6 @@ class GPSJammer:
         print(self.kmn_matrix)'''
 
         self.date = date
-        self.roadNum = roadNum
         self.dataPath = os.path.join(os.getcwd(), "data", date)
         self.unitDelta = {}
 
@@ -148,14 +147,14 @@ class GPSJammer:
                 if self.checkRoad(row[2], row[3]):
                     yield row
 
-    def carOnRoadToCsv(self):
+    def carOnRoadToCsv(self, roadNum):
         csvFiles = os.listdir(self.dataPath)
         try:
             os.makedirs(os.path.join(self.dataPath, "road"))
         except FileExistsError:
             pass
         columns = ['time_stamp', 'unit_id', 'lat', 'lon', 'speed', 'unit_type']
-        resultFile = open(os.path.join(self.dataPath, "road", "road#" + str(self.roadNum) + ".csv"), 'w', newline='')
+        resultFile = open(os.path.join(self.dataPath, "road", "road#" + str(roadNum) + ".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
         csvWriter.writerow(columns)
         for fileName in csvFiles:
@@ -179,24 +178,31 @@ class GPSJammer:
 
     def carByIdToDataframe(self, unit_id):
         csvFiles = os.listdir(self.dataPath)
-        try:
-            os.makedirs(os.path.join(self.dataPath, "road"))
-        except FileExistsError:
-            pass
-        columns = ['time_stamp', 'unit_id', 'lat', 'lon', 'speed', 'unit_type']
         dataset = []
-        subDataset = pd.DataFrame(columns=columns)
         for fileName in csvFiles:
             if not("road" in fileName) and not("delta" in fileName):
                 print(fileName + " Reading...")
-                for i, row in enumerate(self.getCarbyId(os.path.join(self.dataPath, fileName), unit_id)):
-                    if i == 0:
-                        continue
-                    subDataset = subDataset.append(pd.Series(row, index=columns ), ignore_index=True)
+                subDataset = pd.read_csv(os.path.join(self.dataPath, fileName))
+                subDataset = subDataset.loc[subDataset["unit_id"] == unit_id]
                 dataset.append(subDataset)
-                subDataset = pd.DataFrame(columns=columns)
                 print("DONE!")
         return pd.concat(dataset)
+
+        # columns = ['time_stamp', 'unit_id', 'lat', 'lon', 'speed', 'unit_type']
+        # dataset = []
+        # subDataset = pd.DataFrame(columns=columns)
+        # for fileName in csvFiles:
+        #     if not("road" in fileName) and not("delta" in fileName):
+        #         print(fileName + " Reading...")
+        #         for i, row in enumerate(self.getCarbyId(os.path.join(self.dataPath, fileName), unit_id)):
+        #             if i == 0:
+        #                 continue
+        #             subDataset = subDataset.append(pd.Series(row, index=columns ), ignore_index=True)
+        #         dataset.append(subDataset)
+        #         subDataset = pd.DataFrame(columns=columns)
+        #         print("DONE!")
+        # return pd.concat(dataset)
+
 if __name__ == "__main__":
     import time
     import sys, getopt
@@ -215,13 +221,13 @@ if __name__ == "__main__":
     if len(dateList) == 0:
         for date in os.listdir(os.path.join(os.getcwd(), "data")):
             print(date)
-            gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+            gpsJammer = GPSJammer(date=date)
             # gpsJammer.carOnRoadToCsv()
             gpsJammer.allDeltaToCsv(force=force)
     else:
         for date in dateList:
             print(date)
-            gpsJammer = GPSJammer(roadNum=roadNum, date=date)
+            gpsJammer = GPSJammer(date=date)
             # gpsJammer.carOnRoadToCsv()
             gpsJammer.allDeltaToCsv(force=force)
 

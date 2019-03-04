@@ -9,6 +9,8 @@
 !ScatterBokeh.py
 !MapBokeh.py
 !HistogramBokeh.py
+!BokehPlayground.py
+
 
 # Dependency list
 !requirements.txt

@@ -39,21 +39,9 @@ class ParentBokeh(object):
     def buildFigure(self):
         pass
 
-    def latLonToMercator(self, row):
+    @staticmethod
+    def latLonToMercator(row):
         return transform(Proj(init='epsg:4326'), Proj(init='epsg:3857'), row[1], row[0])  # longitude first, latitude second.
-
-    # ------------------------ Callback ------------------------
-    """def pointCallback(self, attr, old, new):
-        '''
-        Callback function for Scatter plot
-        '''
-        selectedUnitId = self.deltaResults['unit_id'].iloc[new[0]]
-        carData = self.gpsJammer.carByIdToDataframe(selectedUnitId)
-        newData = pd.DataFrame(columns=['coor'])
-        newData['coor'] = carData[['lat', 'lon']].apply(latLonToMercator, axis=1)
-        # newData['coor'] = carOnRoad.groupby(['unit_id']).get_group(selectedUnitId)[['lat', 'lon']].apply(latLonToMercator, axis=1)
-        newData['lon'], newData['lat'] = zip(*newData.coor)
-        self.source_map.data = newData[['lat', 'lon']].to_dict('list')"""
 
 # roadNum = 2
 # for date in os.listdir(os.path.join(os.getcwd(), "data")):
