@@ -89,7 +89,10 @@ class GPSJammer:
                     distDelta = haversine(pointNew, pointOld)
                     timeDelta = abs(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S") - self.unitDelta[row[1]][2])
                     
-                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
+                    speedOld = self.unitDelta[3]
+                    speedNew = row[4]
+
+                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), speedNew)
                     if timeDelta.seconds > 60*60 and distDelta > 80:
                         yield [
                                 row[1],\
@@ -100,13 +103,15 @@ class GPSJammer:
                                 pointOld[1],\
                                 pointNew[0],\
                                 pointNew[1],\
-                                distDelta
+                                distDelta,\
+                                speedOld,\
+                                speedNew 
                             ]   
                 else:
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"))
 
     def allDeltaToCsv(self, force):
-        columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist']
+        columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
         try:
             os.makedirs(os.path.join(self.dataPath, "delta"))
         except FileExistsError:
