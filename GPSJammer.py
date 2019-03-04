@@ -89,7 +89,7 @@ class GPSJammer:
                     distDelta = haversine(pointNew, pointOld)
                     timeDelta = abs(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S") - self.unitDelta[row[1]][2])
                     
-                    speedOld = self.unitDelta[3]
+                    speedOld = self.unitDelta[row[1]][3]
                     speedNew = row[4]
 
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), speedNew)
