@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from math import pi
+import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure, curdoc
 
@@ -30,7 +31,7 @@ class HistogramBokeh(ParentBokeh):
 
         # Histogram source
         detected = self.deltaResults
-        detected = detected.loc[detected['delta_dist'] / detected['delta_time'] > 100]
+        detected = detected.loc[detected['delta_dist'] / detected['delta_time'] > 80]
         detectedCount = detected.groupby('unit_id').size()
         ParentBokeh.source_vbar.data = dict(unit_id=detectedCount.index.values, frequency=detectedCount.values)
 
@@ -52,7 +53,9 @@ class HistogramBokeh(ParentBokeh):
         carData = self.gpsJammer.carByIdToDataframe(selectedUnitId)
         carData['coor'] = carData[['lat', 'lon']].apply(ParentBokeh.latLonToMercator, axis=1)
         carData['lon'], carData['lat'] = zip(*carData.coor)
-        ParentBokeh.source_map.data = carData[['lat', 'lon', 'time_stamp', 'speed']].to_dict('list')
+        carData['color'] = carData['time_stamp'].map(pd.Series(data=np.arange(len(carData)), index=carData['time_stamp'].values).to_dict())
+        print(carData['color'])
+        ParentBokeh.source_map.data = carData[['unit_id', 'lat', 'lon', 'time_stamp', 'speed', 'color']].to_dict('list')
 
 # histogramBokeh = HistogramBokeh("2019-01-01")
 # histogramBokeh.prepareData()

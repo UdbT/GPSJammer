@@ -2,6 +2,7 @@ import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.tile_providers import CARTODBPOSITRON_RETINA
 from bokeh.plotting import figure, curdoc
+from bokeh.transform import linear_cmap
 
 from ParentBokeh import ParentBokeh
 
@@ -23,7 +24,7 @@ class MapBokeh(ParentBokeh):
         self.loadData()
 
         # Map source
-        ParentBokeh.source_map.data = dict(lat=[], lon=[], time_stamp=[], speed=[])
+        ParentBokeh.source_map.data = dict(unit_id=[], lat=[], lon=[], time_stamp=[], speed=[], color=[])
 
         # kmn source
         """kmn = self.kmnData
@@ -42,11 +43,12 @@ class MapBokeh(ParentBokeh):
                 x_axis_type="mercator", y_axis_type="mercator")
         _map.add_tile(CARTODBPOSITRON_RETINA)
         # _map.circle(x='lon', y='lat', size=5, alpha=0.5, source=ParentBokeh.source_kmn)
-        glyph_render = _map.circle(x='lon', y='lat', size=10, color='red', source=ParentBokeh.source_map)
+        glyph_render = _map.circle(x='lon', y='lat', size=10, color=linear_cmap('color', "Viridis256", 0, 255), source=ParentBokeh.source_map)
         _map.add_tools(HoverTool(renderers= [glyph_render],
                 tooltips=[
                     ( 'Time', '@time_stamp{%F %T}'),
                     ( 'Speed',   '@speed km/hr'),
+                    ( 'Unit ID', '@unit_id')
                 ],
                 formatters={'time_stamp': 'datetime'}
                 ))

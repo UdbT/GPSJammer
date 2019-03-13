@@ -49,4 +49,14 @@ class MapFolium():
         self.map.save('index.html')
 
 if __name__ == "__main__":
-    pass
+    from GPSJammer import GPSJammer
+    import numpy as np
+
+    gpsJammer = GPSJammer("2019-01-01")
+    df_car = gpsJammer.carByIdToDataframe("0120001000000NIDLT6010-2636")
+    
+    c_dict = df_car['time_stamp'].map(pd.Series(data=np.arange(len(df_car)), index=df_car['time_stamp'].values).to_dict())
+    
+    mapFolium = MapFolium()
+    mapFolium.addCircleCars(df_car)
+    mapFolium.plotMap()

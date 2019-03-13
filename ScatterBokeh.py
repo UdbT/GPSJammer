@@ -72,6 +72,6 @@ class ScatterBokeh(ParentBokeh):
 
         return plot
 
-# scatterBokeh = ScatterBokeh(2, "2019-01-01")
+# scatterBokeh = ScatterBokeh("2019-01-01")
 # scatterBokeh.prepareData()
 # curdoc().add_root(scatterBokeh.buildFigure())
