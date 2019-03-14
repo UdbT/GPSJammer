@@ -3,7 +3,6 @@ from haversine import haversine
 from datetime import datetime
 from joblib import Parallel, delayed
 from multiprocessing import Pool, cpu_count
-
 def deltaDist(x):
     return haversine((float(x["lat"]), float(x["lon"])),(float(x["lat2"]), float(x["lon2"])))
 
@@ -13,7 +12,6 @@ def deltaTime(x):
             ).seconds/3600
 
 def calDelta(df):
-    print("Enter..")
     df.drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
     if len(df) > 1:
         shifted = df.shift(1).rename(index=int,\
@@ -28,7 +26,7 @@ def calDelta(df):
         concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
             .apply(lambda x: deltaTime(x) ,axis=1)
         concated = concated.loc[concated["delta_time"] <= 0.083] # Less than or equal to 5 minutes
-    return concated
+        return concated
 
 def applyParallel(dfGrouped, func):
     retLst = Parallel(n_jobs=cpu_count())(delayed(func)(group) for name, group in dfGrouped)
@@ -37,7 +35,7 @@ def applyParallel(dfGrouped, func):
 if __name__ == '__main__':
     import time
     t = time.time()
-    dataset = pd.read_csv("road#3504.csv")
+    dataset = pd.read_csv("data/2019-01-01/2019-01-01_00.csv")
     groups = dataset.groupby("unit_id")
     result = applyParallel(groups, calDelta)
     result.to_csv("result.csv")
