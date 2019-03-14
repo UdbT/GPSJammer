@@ -10,7 +10,8 @@
 !MapBokeh.py
 !HistogramBokeh.py
 !BokehPlayground.py
-
+!multiprocessing1.py
+!playground.py
 
 # Dependency list
 !requirements.txt
