@@ -12,9 +12,40 @@ from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
 import time
 from haversine import haversine
+from joblib import Parallel, delayed
+from multiprocessing import Pool, cpu_count
 
 def cutDecimal(num_float):
     return round(num_float - num_float % 0.01, 2)
+
+def applyParallel(dfGrouped, func):
+    retLst = Parallel(n_jobs=cpu_count())(delayed(func)(group) for name, group in dfGrouped)
+    return pd.concat(retLst)
+
+def deltaDist(x):
+    return haversine((float(x["lat"]), float(x["lon"])),(float(x["lat2"]), float(x["lon2"])))
+
+def deltaTime(x):
+    return abs(
+            datetime.strptime(x["time_stamp"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(x["time_stamp2"], "%Y-%m-%d %H:%M:%S")
+            ).seconds/3600
+
+def calDelta(df):
+    df.drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
+    if len(df) > 1:
+        shifted = df.shift(1).rename(index=int,\
+                columns={"time_stamp":"time_stamp2", "unit_id":"unit_id2", "lat":"lat2", "lon":"lon2", "speed":"speed2"})
+
+        concated = pd.concat([df, shifted], axis=1, sort=False).iloc[1:,:]
+        concated.drop(["unit_id2", "unit_type"], axis=1, inplace=True)
+
+        concated["delta_dist"] = concated[["lat", "lon", "lat2", "lon2"]]\
+            .apply(lambda x: deltaDist(x), axis=1)
+
+        concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
+            .apply(lambda x: deltaTime(x) ,axis=1)
+        concated = concated.loc[concated["delta_time"] <= 0.083] # Less than or equal to 5 minutes
+        return concated
 
 class GPSJammer:
     def __init__(self, date):
@@ -79,30 +110,8 @@ class GPSJammer:
     def getUnitDelta(self, filename):
         dataset = pd.read_csv(filename)
         groups = dataset.groupby("unit_id")
-        result = []
-        for name, df in groups:
-            df.drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
-            if len(df) > 1:
-                shifted = df.shift(1).rename(index=int,\
-                    columns={"time_stamp":"time_stamp2", "unit_id":"unit_id2", "lat":"lat2", "lon":"lon2", "speed":"speed2"})
-
-                concated = pd.concat([df, shifted], axis=1, sort=False).iloc[1:,:]
-                concated.drop(["unit_id2", "unit_type"], axis=1, inplace=True)
-
-                concated["delta_dist"] = concated[["lat", "lon", "lat2", "lon2"]]\
-                    .apply(lambda x: haversine(
-                        (float(x["lat"]), float(x["lon"])),
-                        (float(x["lat2"]), float(x["lon2"]))
-                        ), axis=1)
-
-                concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
-                    .apply(lambda x: 
-                        abs(
-                            datetime.strptime(x["time_stamp"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(x["time_stamp2"], "%Y-%m-%d %H:%M:%S")
-                        ).seconds/3600  ,axis=1)
-                concated = concated.loc[concated["delta_time"] <= 0.083] # Less than or equal to 5 minutes
-                result.append(concated)
-        return pd.concat(result)
+        result = applyParallel(groups, calDelta)
+        return result
 
     def allDeltaToCsv(self, force):
         columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
