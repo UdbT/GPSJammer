@@ -13,13 +13,12 @@ def deltaTime(x):
             ).seconds/3600
 
 def calDelta(df):
-    # print(df[1])
-    df[0].drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
-    if len(df[0]) > 1:
-        shifted = df[0].shift(1).rename(index=int,\
+    df.drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
+    if len(df) > 1:
+        shifted = df.shift(1).rename(index=int,\
                 columns={"time_stamp":"time_stamp2", "unit_id":"unit_id2", "lat":"lat2", "lon":"lon2", "speed":"speed2"})
 
-        concated = pd.concat([df[0], shifted], axis=1, sort=False).iloc[1:,:]
+        concated = pd.concat([df, shifted], axis=1, sort=False).iloc[1:,:]
         concated.drop(["unit_id2", "unit_type"], axis=1, inplace=True)
 
         concated["delta_dist"] = concated[["lat", "lon", "lat2", "lon2"]]\
@@ -27,24 +26,22 @@ def calDelta(df):
 
         concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
             .apply(lambda x: deltaTime(x) ,axis=1)
-        concated = concated.loc[concated["delta_time"] <= 0.083] # Less than or equal to 5 minutes
+        concated = concated.loc[(concated["delta_dist"] >= 80) & \
+                                (concated["delta_dist"] < 400) & \
+                                (concated["speed"] == 0) & \
+                                (concated["speed2"] == 0)]
         return concated
 
 def applyParallel(dfGrouped, func):
     with Pool(cpu_count()) as p:
-        ret_list = p.map(func, [(group, name) for name, group in dfGrouped])
+        ret_list = p.map(func, [group for name, group in dfGrouped])
     return pd.concat(ret_list)
 
 if __name__ == '__main__':
     import time
-    dataset = pd.read_csv("road#3504.csv")
+    dataset = pd.read_csv(r"data\2019-01-01\2019-01-01_00.csv")
     groups = dataset.groupby("unit_id")
     t = time.time()
-    # print(len(groups))
-    # result = []
-    # for name, group in groups:
-    #     result.append(calDelta((group, name)))
-    # result = pd.concat(result)  
     result = applyParallel(groups, calDelta)
     print(time.time() - t)
 

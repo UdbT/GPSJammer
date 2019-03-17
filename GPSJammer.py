@@ -18,10 +18,6 @@ from multiprocessing import Pool, cpu_count
 def cutDecimal(num_float):
     return round(num_float - num_float % 0.01, 2)
 
-def applyParallel(dfGrouped, func):
-    retLst = Parallel(n_jobs=cpu_count())(delayed(func)(group) for name, group in dfGrouped)
-    return pd.concat(retLst)
-
 def deltaDist(x):
     return haversine((float(x["lat"]), float(x["lon"])),(float(x["lat2"]), float(x["lon2"])))
 
@@ -44,9 +40,17 @@ def calDelta(df):
 
         concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
             .apply(lambda x: deltaTime(x) ,axis=1)
-        concated = concated.loc[concated["delta_time"] <= 0.083] # Less than or equal to 5 minutes
+        concated = concated.loc[(concated["delta_dist"] >= 80) & \
+                                (concated["delta_dist"] < 400) & \
+                                (concated["speed"] == 0) & \
+                                (concated["speed2"] == 0)]
         return concated
-
+    
+def applyParallel(dfGrouped, func):
+    with Pool(cpu_count()) as p:
+        ret_list = p.map(func, [group for name, group in dfGrouped])
+    return pd.concat(ret_list)
+    
 class GPSJammer:
     def __init__(self, date):
         self.kmn_all = pd.read_csv("km_n_new.csv", sep=",")
@@ -109,7 +113,10 @@ class GPSJammer:
         return result
 
     def allDeltaToCsv(self, force):
-        columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
+        '''
+            columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start',
+                        'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
+        '''
         try:
             os.makedirs(os.path.join(self.dataPath, "delta"))
         except FileExistsError:
