@@ -49,13 +49,8 @@ def calDelta(df):
 
 class GPSJammer:
     def __init__(self, date):
-        '''kmn = pd.read_csv("km_n_new.csv", sep=",")
-        kmn = kmn.loc[kmn['route'] == roadNum]
-        kmn['order'] = kmn['km_label'].str.split("+")
-        kmn['order'] = kmn['order'].str.get(0)
-        kmn['order'] = kmn['order'].apply(int)
-        kmn.sort_values(by='order', inplace=True)
-        self.kmn_matrix = kmn.loc[:,['km_latitude', 'km_longitude']].values'''
+        self.kmn_all = pd.read_csv("km_n_new.csv", sep=",")
+        self.kmn = None
         
         '''self.kmn_matrix = {}
         kmn_coordinate = kmn.loc[:,['km_latitude', 'km_longitude']].apply(cutDecimal)
