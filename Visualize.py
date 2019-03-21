@@ -8,7 +8,7 @@ from bokeh.models import DatetimeTickFormatter, ColumnDataSource, HoverTool
 class MapFolium():
     def __init__(self):
         self.map = folium.Map(location=[13.7563, 100.5018],
-        #                  tiles='Stamen Toner',
+                         tiles='Stamen Toner',
                           zoom_start = 10)
     
     def convert_to_hex(self, rgba_color) :
@@ -36,12 +36,14 @@ class MapFolium():
                 ).add_to(self.map)
             
     def addCircleCars(self, car_df):
-        for location, speed in zip(car_df.iloc[:,2:4].astype('float').values, car_df.iloc[:,4].astype('float').values):
+        print(car_df)
+        for location, speed in zip(car_df.loc[:,["lat", "lon"]].astype('float').values, car_df.loc[:,"speed"].astype('float').values):
             folium.Circle(
                 location=location,
                 popup='{}\n{}'.format(speed, str(location)),
                 radius=50,
-                color=self.mapColor(speed),
+                color="red",
+                # color=self.mapColor(speed),
                 fill=True,
             ).add_to(self.map) 
             

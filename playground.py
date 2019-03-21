@@ -39,10 +39,10 @@ def applyParallel(dfGrouped, func):
 
 if __name__ == '__main__':
     import time
-    dataset = pd.read_csv(r"data\2019-01-01\2019-01-01_00.csv")
-    groups = dataset.groupby("unit_id")
     t = time.time()
-    result = applyParallel(groups, calDelta)
+    dataset = pd.read_csv(r"D:\Utt\Work\GPSJammer\data\2019-01-01\2019-01-01_00.csv")
+    groups = dataset.groupby("unit_id")
     print(time.time() - t)
+    # result = applyParallel(groups, calDelta)
 
-    result.to_csv("result.csv")
+    # result.to_csv("result.csv")

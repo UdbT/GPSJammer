@@ -94,29 +94,47 @@ class GPSJammer:
                 float(lon) <= max(longs) and float(lon) >= min(longs):
                 return True
         return False
-                  
-    def getUnitId(self, filename):
-        with open(filename, "rt") as csvfile:
-            datareader = csv.reader(csvfile)
-            yield next(datareader)  # yield the header row
-            for row in datareader:
-                yield row[1]
-
+        
     def toDatetime(self, row):
         timeStamp = row['time_stamp']
         return datetime.strptime(timeStamp, "%Y-%m-%d %H:%M:%S")
 
+#-------------------------------Calculate delta--------------------------------
     def getUnitDelta(self, filename):
-        dataset = pd.read_csv(filename)
-        groups = dataset.groupby("unit_id")
-        result = applyParallel(groups, calDelta)
-        return result
+        with open(filename, "rt") as csvfile:
+            datareader = csv.reader(csvfile) # columns = [time_stamp, unit_id, lat, lon, speed, unit_type]
+            yield next(datareader)  # yield the header row
+            for row in datareader:
+                if row[1] in self.unitDelta:
+                    pointNew = (float(row[2]), float(row[3]))
+                    pointOld = (float(self.unitDelta[row[1]][0]), float(self.unitDelta[row[1]][1]))
+                    
+                    distDelta = haversine(pointNew, pointOld)
+                    timeDelta = abs(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S") - self.unitDelta[row[1]][2])
+                    
+                    speedOld = self.unitDelta[row[1]][3]
+                    speedNew = row[4]
+
+                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), speedNew)
+                    # if timeDelta.seconds >= 60*60 and distDelta >= 80:
+                    yield [
+                            row[1],\
+                            datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"),\
+                            self.unitDelta[row[1]][2],\
+                            str(timeDelta.seconds/3600),\
+                            pointOld[0],\
+                            pointOld[1],\
+                            pointNew[0],\
+                            pointNew[1],\
+                            distDelta,\
+                            speedOld,\
+                            speedNew 
+                        ]   
+                else:
+                    self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), row[4])
 
     def allDeltaToCsv(self, force):
-        '''
-            columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start',
-                        'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
-        '''
+        columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
         try:
             os.makedirs(os.path.join(self.dataPath, "delta"))
         except FileExistsError:
@@ -126,15 +144,26 @@ class GPSJammer:
             else:
                 print("Forced to calculate delta.")
         csvFiles = os.listdir(self.dataPath)
-        dataset = []
+        resultFile = open(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"), 'w', newline='')
+        csvWriter = csv.writer(resultFile)
+        csvWriter.writerow(columns)
+        count = 0
         for fileName in csvFiles:
             if not("road" in fileName) and not("delta" in fileName):
                 print("--> " + fileName + " Reading...")
-                dataset.append(self.getUnitDelta(os.path.join(self.dataPath, fileName)))
+                for i, row in enumerate(self.getUnitDelta(os.path.join(self.dataPath, fileName))):
+                    if i == 0:
+                        continue
+                    count += 1
+                    if count%100 == 0:
+                        print("-->", count, end='\r')
+                    csvWriter.writerow(row)
+                print()
                 print("--> " + "DONE!")
-        dataset = pd.concat(dataset)
-        dataset.to_csv(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"))
 
+        resultFile.close()
+
+#-------------------------------Filter car by road--------------------------------
     def getCarOnRoad(self, filename):
         with open(filename, "rt") as csvfile:
             datareader = csv.reader(csvfile)
@@ -164,6 +193,7 @@ class GPSJammer:
             
         resultFile.close()
 
+#-------------------------------Get car by unit ID--------------------------------
     def getCarbyId(self, filename, unit_id):
         with open(filename, "rt") as csvfile:
             datareader = csv.reader(csvfile)
