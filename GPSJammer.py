@@ -155,7 +155,7 @@ class GPSJammer:
                     if i == 0:
                         continue
                     count += 1
-                    if count%100 == 0:
+                    if count%100000 == 0:
                         print("-->", count, end='\r')
                     csvWriter.writerow(row)
                 print()
