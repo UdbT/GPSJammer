@@ -33,6 +33,7 @@ class HistogramBokeh(ParentBokeh):
         detected = self.deltaResults
         detected = detected.loc[detected['delta_dist'] / detected['delta_time'] > 80]
         detectedCount = detected.groupby('unit_id').size()
+        detectedCount = detectedCount[detectedCount < 10]
         ParentBokeh.source_vbar.data = dict(unit_id=detectedCount.index.values, frequency=detectedCount.values)
 
     def buildFigure(self):
