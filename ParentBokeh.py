@@ -15,11 +15,11 @@ class ParentBokeh(object):
     
     # ScatterBokeh sources
     source_delta = ColumnDataSource()
-    source_c = ColumnDataSource()
+    source_c = ColumnDataSource() # Control speed
 
     # MapBokeh sources
     source_map = ColumnDataSource()
-    source_kmn = ColumnDataSource()
+    source_kmn = ColumnDataSource() # Milestone
 
     # Histogram source
     source_vbar = ColumnDataSource()

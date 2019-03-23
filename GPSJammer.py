@@ -76,7 +76,11 @@ class GPSJammer:
 
         self.date = date
         self.dataPath = os.path.join(os.getcwd(), "data", date)
+        self.deltaPath = os.path.join(self.dataPath, "delta")
+        self.cachePath = os.path.join(self.dataPath, "cache")
         self.unitDelta = {}
+        self.rawColumns = ['time_stamp', 'unit_id', 'lat', 'lon', 'speed', 'unit_type']
+        self.deltaColumns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
 
     def checkRoad(self, lat, lon):
         '''lat = cutDecimal(float(lat))
@@ -134,9 +138,8 @@ class GPSJammer:
                     self.unitDelta[row[1]] = (row[2], row[3], datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S"), row[4])
 
     def allDeltaToCsv(self, force):
-        columns = ['unit_id', 'time_start', 'time_end', 'delta_time', 'lat_start', 'lon_start', 'lat_end', 'lon_end', 'delta_dist', 'speed_old', 'speed_new']
         try:
-            os.makedirs(os.path.join(self.dataPath, "delta"))
+            os.makedirs(self.deltaPath)
         except FileExistsError:
             if not force:
                 print("(Delta is already created.)")
@@ -144,12 +147,12 @@ class GPSJammer:
             else:
                 print("Forced to calculate delta.")
         csvFiles = os.listdir(self.dataPath)
-        resultFile = open(os.path.join(self.dataPath, "delta", "delta_"+self.date+".csv"), 'w', newline='')
+        resultFile = open(os.path.join(self.deltaPath, self.date+".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
-        csvWriter.writerow(columns)
+        csvWriter.writerow(self.deltaColumns)
         count = 0
         for fileName in csvFiles:
-            if not("road" in fileName) and not("delta" in fileName):
+            if not("result" in fileName) and not("delta" in fileName):
                 print("--> " + fileName + " Reading...")
                 for i, row in enumerate(self.getUnitDelta(os.path.join(self.dataPath, fileName))):
                     if i == 0:
@@ -163,25 +166,46 @@ class GPSJammer:
 
         resultFile.close()
 
-#-------------------------------Filter car by road--------------------------------
-    def getCarOnRoad(self, filename):
+#-------------------------------Calculate delta--------------------------------
+    def deltaByIdToCsv(self, unit_id=None):
+        deltaFile = os.path.join(self.deltaPath, self.date+".csv")
+        
+        if unit_id+".csv" in os.listdir(self.deltaPath): 
+            print("This unit ID already has delta info.")
+            return
+
+        resultFile = open(os.path.join(self.deltaPath, unit_id+".csv"), 'w', newline='')
+        csvWriter = csv.writer(resultFile)
+        csvWriter.writerow(self.deltaColumns)
+        count = 0
+        for i, row in enumerate(self.getDeltaById(deltaFile, unit_id)):
+            if i == 0:
+                continue
+            count += 1
+            if count%5 == 0:
+                print("-->", count, end='\r')
+            csvWriter.writerow(row)
+
+        resultFile.close()
+
+    def getDeltaById(self, filename, unit_id):
         with open(filename, "rt") as csvfile:
             datareader = csv.reader(csvfile)
             yield next(datareader)  # yield the header row
             for row in datareader:
-                if self.checkRoad(row[2], row[3]):
+                if row[0] == unit_id:
                     yield row
 
+#-------------------------------Filter car by road--------------------------------
     def carOnRoadToCsv(self, roadNum):
         csvFiles = os.listdir(self.dataPath)
         try:
             os.makedirs(os.path.join(self.dataPath, "road"))
         except FileExistsError:
             pass
-        columns = ['time_stamp', 'unit_id', 'lat', 'lon', 'speed', 'unit_type']
         resultFile = open(os.path.join(self.dataPath, "road", "road#" + str(roadNum) + ".csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
-        csvWriter.writerow(columns)
+        csvWriter.writerow(self.rawColumns)
         for fileName in csvFiles:
             if not("road" in fileName) and not("delta" in fileName):
                 print(fileName + " Reading...")
@@ -193,27 +217,62 @@ class GPSJammer:
             
         resultFile.close()
 
-#-------------------------------Get car by unit ID--------------------------------
-    def getCarbyId(self, filename, unit_id):
+    def getCarOnRoad(self, filename):
         with open(filename, "rt") as csvfile:
             datareader = csv.reader(csvfile)
             yield next(datareader)  # yield the header row
             for row in datareader:
-                if row[1] == unit_id:
+                if self.checkRoad(row[2], row[3]):
                     yield row
 
+#-------------------------------Get car by unit ID--------------------------------
     def carByIdToDataframe(self, unit_id):
-        csvFiles = os.listdir(self.dataPath)
-        dataset = []
-        for fileName in csvFiles:
-            if not("road" in fileName) and not("delta" in fileName):
-                print(fileName + " Reading...")
-                subDataset = pd.read_csv(os.path.join(self.dataPath, fileName))
-                subDataset = subDataset.loc[subDataset["unit_id"] == unit_id]
-                dataset.append(subDataset)
-                print("DONE!")
-        return pd.concat(dataset)
+        try:
+            os.makedirs(self.cachePath)
+        except FileExistsError:
+            pass
 
+        if unit_id+".csv" in os.listdir(self.cachePath):
+            return pd.read_csv(os.path.join(self.cachePath, unit_id+".csv"))
+        else:
+            csvFiles = os.listdir(self.dataPath)
+            dataset = []
+            for fileName in csvFiles:
+                if not("result" in fileName) and not("delta" in fileName) and not("cache" in fileName):
+                    print(fileName + " Reading...")
+                    subDataset = pd.read_csv(os.path.join(self.dataPath, fileName))
+                    subDataset = subDataset.loc[subDataset["unit_id"] == unit_id]
+                    dataset.append(subDataset)
+                    print("DONE!")
+            result = pd.concat(dataset)
+            print(result)
+            result.to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
+            return result
+
+#-------------------------------Filter function--------------------------------
+    def filterDataToCsv(self):
+        deltaFile = os.path.join(self.deltaPath, self.date+".csv")
+
+        resultFile = open(os.path.join(self.dataPath, "result.csv"), 'w', newline='')
+        csvWriter = csv.writer(resultFile)
+        csvWriter.writerow(self.deltaColumns)
+        count = 0
+        for i, row in enumerate(self.getData(deltaFile)):
+            if i == 0:
+                continue
+            count += 1
+            if count%5 == 0:
+                print("-->", count, end='\r')
+            csvWriter.writerow(row)
+
+        resultFile.close()
+    def getData(self, filename):
+        with open(filename, "rt") as csvfile:
+            datareader = csv.reader(csvfile)
+            yield next(datareader)  # yield the header row
+            for row in datareader:
+                if float(row[8]) >= 100 and float(row[8]) < 400 and float(row[3]) > 0: # row[3] = delta_time, row[8] = delta_dist
+                    yield row
 if __name__ == "__main__":
     import time
     import sys, getopt
@@ -228,20 +287,24 @@ if __name__ == "__main__":
     else:
         dateList = sys.argv[1:]
 
-    print(dateList)
-    if len(dateList) == 0:
-        # If no specific date then use every date
-        for date in os.listdir(os.path.join(os.getcwd(), "data")):
-            print(date)
-            gpsJammer = GPSJammer(date=date)
-            # gpsJammer.carOnRoadToCsv()
-            gpsJammer.allDeltaToCsv(force=force)
-    else:
-        # Use only sepcific date
-        for date in dateList:
-            print(date)
-            gpsJammer = GPSJammer(date=date)
-            # gpsJammer.carOnRoadToCsv()
-            gpsJammer.allDeltaToCsv(force=force)
+    
+    gpsJammer = GPSJammer(date="2019-01-01")
+    gpsJammer.filterDataToCsv()
+
+    # print(dateList)
+    # if len(dateList) == 0:
+    #     # If no specific date then use every date
+    #     for date in os.listdir(os.path.join(os.getcwd(), "data")):
+    #         print(date)
+    #         gpsJammer = GPSJammer(date=date)
+    #         # gpsJammer.carOnRoadToCsv()
+    #         # gpsJammer.allDeltaToCsv(force=force)
+    # else:
+    #     # Use only sepcific date
+    #     for date in dateList:
+    #         print(date)
+    #         gpsJammer = GPSJammer(date=date)
+    #         # gpsJammer.carOnRoadToCsv()
+    #         # gpsJammer.allDeltaToCsv(force=force)
 
     print(time.time() - t)
