@@ -255,34 +255,41 @@ class GPSJammer:
                     yield row
 if __name__ == "__main__":
     import time
-    import sys, getopt
+    import sys
 
     t = time.time()
-    roadNum = 2
-    dateList = sys.argv[1:]
-    force = False
-    if "-f" in sys.argv[1:]:
-        dateList = sys.argv[2:]
-        force = True
-    else:
-        dateList = sys.argv[1:]
+    for date in os.listdir(os.path.join(os.getcwd(), "data")):
+        print(date)
+        gpsJammer = GPSJammer(date=date)
+        gpsJammer.carByIdToDataframe("005000600000863835024605490")
+        # gpsJammer.carOnRoadToCsv()
+        # gpsJammer.allDeltaToCsv(force=force)
+        # gpsJammer.filterDataToCsv(force=force)
+    # roadNum = 2
+    # dateList = sys.argv[1:]
+    # force = False
+    # if "-f" in sys.argv[1:]:
+    #     dateList = sys.argv[2:]
+    #     force = True
+    # else:
+    #     dateList = sys.argv[1:]
 
-    print(dateList)
-    if len(dateList) == 0:
-        # If no specific date then use every date
-        for date in os.listdir(os.path.join(os.getcwd(), "data")):
-            print(date)
-            gpsJammer = GPSJammer(date=date)
-            # gpsJammer.carOnRoadToCsv()
-            # gpsJammer.allDeltaToCsv(force=force)
-            gpsJammer.filterDataToCsv(force=force)
-    else:
-        # Use only sepcific date
-        for date in dateList:
-            print(date)
-            gpsJammer = GPSJammer(date=date)
-            # gpsJammer.carOnRoadToCsv()
-            # gpsJammer.allDeltaToCsv(force=force)
-            gpsJammer.filterDataToCsv(force=force)
+    # print(dateList)
+    # if len(dateList) == 0:
+    #     # If no specific date then use every date
+    #     for date in os.listdir(os.path.join(os.getcwd(), "data")):
+    #         print(date)
+    #         gpsJammer = GPSJammer(date=date)
+    #         # gpsJammer.carOnRoadToCsv()
+    #         # gpsJammer.allDeltaToCsv(force=force)
+    #         gpsJammer.filterDataToCsv(force=force)
+    # else:
+    #     # Use only sepcific date
+    #     for date in dateList:
+    #         print(date)
+    #         gpsJammer = GPSJammer(date=date)
+    #         # gpsJammer.carOnRoadToCsv()
+    #         # gpsJammer.allDeltaToCsv(force=force)
+    #         gpsJammer.filterDataToCsv(force=force)
 
     print(time.time() - t)
