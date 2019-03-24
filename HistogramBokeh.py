@@ -20,7 +20,7 @@ class HistogramBokeh(ParentBokeh):
 
         # Check if there is any delta files
         try:
-            self.deltaResults = pd.read_csv(os.path.join(dataPath, "result.csv"))
+            self.deltaResults = pd.read_csv(os.path.join(dataPath, "delta", "result.csv"))
         except:
             print("Dose not have delta yet.")
             return
@@ -32,6 +32,7 @@ class HistogramBokeh(ParentBokeh):
         # Histogram source
         detected = self.deltaResults
         detected = detected.loc[detected['delta_dist'] / detected['delta_time'] > 80]
+        detected = detected.loc[detected['delta_dist'] > 100]
         detectedCount = detected.groupby('unit_id').size()
         detectedCount = detectedCount.loc[lambda x: x <= 10]
         detectedCount = detectedCount.loc[lambda x: x >1]

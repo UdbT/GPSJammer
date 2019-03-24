@@ -17,7 +17,7 @@ class ScatterBokeh(ParentBokeh):
 
         # Check if there is any delta files
         try:
-            self.deltaResults = pd.read_csv(os.path.join(dataPath, "result.csv"))
+            self.deltaResults = pd.read_csv(os.path.join(dataPath, "delta", "result.csv"))
             self.deltaResults[['delta_dist', 'delta_time']] = self.deltaResults.loc[:, ['delta_dist', 'delta_time']].astype(float)
         except:
             print("Dose not have delta yet.")

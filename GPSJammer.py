@@ -17,39 +17,6 @@ from multiprocessing import Pool, cpu_count
 
 def cutDecimal(num_float):
     return round(num_float - num_float % 0.01, 2)
-
-def deltaDist(x):
-    return haversine((float(x["lat"]), float(x["lon"])),(float(x["lat2"]), float(x["lon2"])))
-
-def deltaTime(x):
-    return abs(
-            datetime.strptime(x["time_stamp"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(x["time_stamp2"], "%Y-%m-%d %H:%M:%S")
-            ).seconds/3600
-
-def calDelta(df):
-    df.drop_duplicates(subset=["unit_id", "lat", "lon", "speed", "unit_type"], keep="last", inplace=True)
-    if len(df) > 1:
-        shifted = df.shift(1).rename(index=int,\
-                columns={"time_stamp":"time_stamp2", "unit_id":"unit_id2", "lat":"lat2", "lon":"lon2", "speed":"speed2"})
-
-        concated = pd.concat([df, shifted], axis=1, sort=False).iloc[1:,:]
-        concated.drop(["unit_id2", "unit_type"], axis=1, inplace=True)
-
-        concated["delta_dist"] = concated[["lat", "lon", "lat2", "lon2"]]\
-            .apply(lambda x: deltaDist(x), axis=1)
-
-        concated["delta_time"] = concated[["time_stamp", "time_stamp2"]]\
-            .apply(lambda x: deltaTime(x) ,axis=1)
-        concated = concated.loc[(concated["delta_dist"] >= 80) & \
-                                (concated["delta_dist"] < 400) & \
-                                (concated["speed"] == 0) & \
-                                (concated["speed2"] == 0)]
-        return concated
-    
-def applyParallel(dfGrouped, func):
-    with Pool(cpu_count()) as p:
-        ret_list = p.map(func, [group for name, group in dfGrouped])
-    return pd.concat(ret_list)
     
 class GPSJammer:
     def __init__(self, date):
@@ -166,7 +133,7 @@ class GPSJammer:
 
         resultFile.close()
 
-#-------------------------------Calculate delta--------------------------------
+#-------------------------------Get delta by unit ID--------------------------------
     def deltaByIdToCsv(self, unit_id=None):
         deltaFile = os.path.join(self.deltaPath, self.date+".csv")
         
@@ -232,8 +199,9 @@ class GPSJammer:
         except FileExistsError:
             pass
 
+        result = None
         if unit_id+".csv" in os.listdir(self.cachePath):
-            return pd.read_csv(os.path.join(self.cachePath, unit_id+".csv"))
+            result = pd.read_csv(os.path.join(self.cachePath, unit_id+".csv"))
         else:
             csvFiles = os.listdir(self.dataPath)
             dataset = []
@@ -245,15 +213,26 @@ class GPSJammer:
                     dataset.append(subDataset)
                     print("DONE!")
             result = pd.concat(dataset)
-            print(result)
-            result.to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
-            return result
+
+        result["time_stamp"] = pd.to_datetime(result["time_stamp"])
+        result.sort_values(by=["time_stamp"], inplace=True)
+        result.reset_index(inplace=True)
+        result.drop("index", axis=1, inplace=True)
+        print(result)
+        result.to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
+        return result
 
 #-------------------------------Filter function--------------------------------
-    def filterDataToCsv(self):
-        deltaFile = os.path.join(self.deltaPath, self.date+".csv")
+    def filterDataToCsv(self, force):
+        if "result.csv" in os.listdir(self.deltaPath):
+            if not force:
+                print("(Delta is already created.)")
+                return
+            else:
+                print("Forced to calculate delta.")
 
-        resultFile = open(os.path.join(self.dataPath, "result.csv"), 'w', newline='')
+        deltaFile = os.path.join(self.deltaPath, self.date+".csv")
+        resultFile = open(os.path.join(self.dataPath, "delta", "result.csv"), 'w', newline='')
         csvWriter = csv.writer(resultFile)
         csvWriter.writerow(self.deltaColumns)
         count = 0
@@ -266,6 +245,7 @@ class GPSJammer:
             csvWriter.writerow(row)
 
         resultFile.close()
+
     def getData(self, filename):
         with open(filename, "rt") as csvfile:
             datareader = csv.reader(csvfile)
@@ -287,24 +267,22 @@ if __name__ == "__main__":
     else:
         dateList = sys.argv[1:]
 
-    
-    gpsJammer = GPSJammer(date="2019-01-01")
-    gpsJammer.filterDataToCsv()
-
-    # print(dateList)
-    # if len(dateList) == 0:
-    #     # If no specific date then use every date
-    #     for date in os.listdir(os.path.join(os.getcwd(), "data")):
-    #         print(date)
-    #         gpsJammer = GPSJammer(date=date)
-    #         # gpsJammer.carOnRoadToCsv()
-    #         # gpsJammer.allDeltaToCsv(force=force)
-    # else:
-    #     # Use only sepcific date
-    #     for date in dateList:
-    #         print(date)
-    #         gpsJammer = GPSJammer(date=date)
-    #         # gpsJammer.carOnRoadToCsv()
-    #         # gpsJammer.allDeltaToCsv(force=force)
+    print(dateList)
+    if len(dateList) == 0:
+        # If no specific date then use every date
+        for date in os.listdir(os.path.join(os.getcwd(), "data")):
+            print(date)
+            gpsJammer = GPSJammer(date=date)
+            # gpsJammer.carOnRoadToCsv()
+            # gpsJammer.allDeltaToCsv(force=force)
+            gpsJammer.filterDataToCsv(force=force)
+    else:
+        # Use only sepcific date
+        for date in dateList:
+            print(date)
+            gpsJammer = GPSJammer(date=date)
+            # gpsJammer.carOnRoadToCsv()
+            # gpsJammer.allDeltaToCsv(force=force)
+            gpsJammer.filterDataToCsv(force=force)
 
     print(time.time() - t)
