@@ -5,17 +5,18 @@ from bokeh.plotting import figure, curdoc
 from bokeh.transform import linear_cmap
 
 from ParentBokeh import ParentBokeh
+from GPSJammer import GPSJammer
 
 class MapBokeh(ParentBokeh):
-    def __init__(self, date, roadNum):
+    def __init__(self, date, roadNum=None):
         super().__init__(date)
-        self.roadNum = roadNum
+        # self.roadNum = roadNum
         self.kmnData = pd.DataFrame()
 
     def loadData(self):
         self.kmnData = pd.read_csv("km_n_new.csv", sep=",")
     
-    def prepareData(self):
+    def prepareData(self, date=None):
         '''
         Prepare data for all figure and glyph
         '''
@@ -24,7 +25,16 @@ class MapBokeh(ParentBokeh):
         self.loadData()
 
         # Map source
-        ParentBokeh.source_map.data = dict(unit_id=[], lat=[], lon=[], time_stamp=[], speed=[], color=[])
+        if date is None:
+            ParentBokeh.source_map.data = dict(unit_id=[], lat=[], lon=[], time_stamp=[], speed=[], color=[])
+        else:
+            gpsJammer = GPSJammer(date)
+            carData = gpsJammer.carByIdToDataframe("005000600000863835024605490")
+            carData['coor'] = carData[['lat', 'lon']].apply(ParentBokeh.latLonToMercator, axis=1)
+            carData['lon'], carData['lat'] = zip(*carData.coor)
+            carData['color'] = carData['time_stamp'].map(pd.Series(data=np.arange(len(carData)), index=carData['time_stamp'].values).to_dict())
+            print(carData['color'])
+            ParentBokeh.source_map.data = carData[['unit_id', 'lat', 'lon', 'time_stamp', 'speed', 'color']].to_dict('list')
 
         # kmn source
         """kmn = self.kmnData
@@ -55,6 +65,8 @@ class MapBokeh(ParentBokeh):
 
         return _map
 
-# mapBokeh = MapBokeh(2, "2019-01-01")
-# mapBokeh.prepareData()
-# curdoc().add_root(mapBokeh.buildFigure())
+import os
+mapBokeh = MapBokeh("2019-01-01")
+for date in os.listdir(os.path.join(os.getcwd(), "data")):
+    mapBokeh.prepareData(date)
+    curdoc().add_root(mapBokeh.buildFigure())
