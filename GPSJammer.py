@@ -218,7 +218,6 @@ class GPSJammer:
         result.sort_values(by=["time_stamp"], inplace=True)
         result.reset_index(inplace=True)
         result.drop("index", axis=1, inplace=True)
-        print(result)
         result[self.rawColumns].to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
         return result
 

@@ -64,7 +64,6 @@ def callback(attr, old, new):
     carData['coor'] = carData[['lat', 'lon']].apply(ParentBokeh.latLonToMercator, axis=1)
     carData['lon'], carData['lat'] = zip(*carData.coor)
     carData['color'] = carData['time_stamp'].map(pd.Series(data=np.arange(len(carData)), index=carData['time_stamp'].values).to_dict())
-    print(carData['color'])
     ParentBokeh.source_map.data = carData[['unit_id', 'lat', 'lon', 'time_stamp', 'speed', 'color']].to_dict('list')
 
 import os
