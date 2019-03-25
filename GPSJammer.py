@@ -219,7 +219,7 @@ class GPSJammer:
         result.reset_index(inplace=True)
         result.drop("index", axis=1, inplace=True)
         print(result)
-        result.to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
+        result[self.rawColumns].to_csv(os.path.join(self.cachePath, unit_id+".csv"), sep=',')
         return result
 
 #-------------------------------Filter function--------------------------------
