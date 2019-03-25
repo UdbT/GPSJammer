@@ -12,7 +12,3 @@ curdoc().add_root(scatterBokeh.buildFigure())
 histogramBokeh = HistogramBokeh(date)
 histogramBokeh.prepareData()
 curdoc().add_root(histogramBokeh.buildFigure())
-
-mapBokeh = MapBokeh(date, 7)
-mapBokeh.prepareData()
-curdoc().add_root(mapBokeh.buildFigure())
