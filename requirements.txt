@@ -13,7 +13,7 @@ matplotlib==3.0.2
 numpy==1.16.1
 packaging==19.0
 pandas==0.24.1
-Pillow==5.4.1
+Pillow==6.2.0
 pyparsing==2.3.1
 pyproj==1.9.6
 python-dateutil==2.8.0
